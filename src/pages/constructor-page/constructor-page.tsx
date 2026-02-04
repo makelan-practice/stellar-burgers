@@ -7,21 +7,33 @@ import styles from './constructor-page.module.css';
 import { BurgerIngredients } from '../../components';
 import { BurgerConstructor } from '../../components';
 import { Preloader } from '../../components/ui';
-import { selectIngredientsLoading } from '../../services/selectors/ingredientsSelectors';
+import {
+  selectIngredients,
+  selectIngredientsError,
+  selectIngredientsLoading
+} from '../../services/selectors/ingredientsSelectors';
 import { fetchIngredients } from '../../services/slices/ingredientsSlice';
 
 export const ConstructorPage: FC = () => {
   const dispatch = useDispatch();
   const isIngredientsLoading = useSelector(selectIngredientsLoading);
+  const ingredientsError = useSelector(selectIngredientsError);
+  const ingredients = useSelector(selectIngredients);
 
   useEffect(() => {
-    dispatch(fetchIngredients());
-  }, [dispatch]);
+    if (!ingredients.length) {
+      dispatch(fetchIngredients());
+    }
+  }, [dispatch, ingredients.length]);
 
   return (
     <>
       {isIngredientsLoading ? (
         <Preloader />
+      ) : ingredientsError ? (
+        <p className='text text_type_main-default'>
+          Ошибка загрузки ингредиентов: {ingredientsError}
+        </p>
       ) : (
         <main className={styles.containerMain}>
           <h1
