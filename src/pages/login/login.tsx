@@ -15,12 +15,13 @@ export const Login: FC = () => {
 
   const handleSubmit = (e: SyntheticEvent) => {
     e.preventDefault();
-    dispatch(login({ email, password })).then((res) => {
-      if ((res as { type: string }).type.endsWith('/fulfilled')) {
+    dispatch(login({ email, password }))
+      .unwrap()
+      .then(() => {
         const from = (location.state as { from?: { pathname?: string } })?.from;
         navigate(from?.pathname || '/', { replace: true });
-      }
-    });
+      })
+      .catch(() => null);
   };
 
   return (

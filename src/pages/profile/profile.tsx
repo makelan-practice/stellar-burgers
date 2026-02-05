@@ -39,7 +39,13 @@ export const Profile: FC = () => {
         email: formValue.email,
         ...(formValue.password ? { password: formValue.password } : {})
       })
-    );
+    )
+      .unwrap()
+      .then(() => {
+        // После успешного сохранения скрываем кнопки и очищаем пароль
+        setFormValue((prev) => ({ ...prev, password: '' }));
+      })
+      .catch(() => null);
   };
 
   const handleCancel = (e: SyntheticEvent) => {

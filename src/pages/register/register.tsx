@@ -15,11 +15,10 @@ export const Register: FC = () => {
 
   const handleSubmit = (e: SyntheticEvent) => {
     e.preventDefault();
-    dispatch(register({ email, password, name: userName })).then((res) => {
-      if ((res as { type: string }).type.endsWith('/fulfilled')) {
-        navigate('/', { replace: true });
-      }
-    });
+    dispatch(register({ email, password, name: userName }))
+      .unwrap()
+      .then(() => navigate('/', { replace: true }))
+      .catch(() => null);
   };
 
   return (
