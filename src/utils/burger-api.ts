@@ -4,6 +4,17 @@ import { TIngredient, TOrder, TOrdersData, TUser } from './types';
 const URL =
   process.env.BURGER_API_URL || 'https://norma.education-services.ru/api';
 
+const REQUEST_TIMEOUT_MS = 15000;
+
+const fetchWithTimeout = (url: RequestInfo, options: RequestInit = {}) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  return fetch(url, { ...options, signal: controller.signal }).finally(() =>
+    clearTimeout(timeoutId)
+  );
+};
+
 const checkResponse = <T>(res: Response): Promise<T> =>
   res.ok ? res.json() : res.json().then((err) => Promise.reject(err));
 
@@ -17,7 +28,7 @@ type TRefreshResponse = TServerResponse<{
 }>;
 
 export const refreshToken = (): Promise<TRefreshResponse> =>
-  fetch(`${URL}/auth/token`, {
+  fetchWithTimeout(`${URL}/auth/token`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json;charset=utf-8'
@@ -41,16 +52,19 @@ export const fetchWithRefresh = async <T>(
   options: RequestInit
 ) => {
   try {
-    const res = await fetch(url, options);
+    const res = await fetchWithTimeout(url, options);
     return await checkResponse<T>(res);
   } catch (err) {
+    if ((err as { name?: string })?.name === 'AbortError') {
+      throw new Error('Превышено время ожидания ответа сервера');
+    }
     if ((err as { message: string }).message === 'jwt expired') {
       const refreshData = await refreshToken();
       if (options.headers) {
         (options.headers as { [key: string]: string }).authorization =
           refreshData.accessToken;
       }
-      const res = await fetch(url, options);
+      const res = await fetchWithTimeout(url, options);
       return await checkResponse<T>(res);
     } else {
       return Promise.reject(err);
@@ -73,7 +87,7 @@ type TOrdersResponse = TServerResponse<{
 }>;
 
 export const getIngredientsApi = () =>
-  fetch(`${URL}/ingredients`)
+  fetchWithTimeout(`${URL}/ingredients`)
     .then((res) => checkResponse<TIngredientsResponse>(res))
     .then((data) => {
       if (data?.success) return data.data;
@@ -81,7 +95,7 @@ export const getIngredientsApi = () =>
     });
 
 export const getFeedsApi = () =>
-  fetch(`${URL}/orders/all`)
+  fetchWithTimeout(`${URL}/orders/all`)
     .then((res) => checkResponse<TFeedsResponse>(res))
     .then((data) => {
       if (data?.success) return data;
@@ -125,7 +139,7 @@ type TOrderResponse = TServerResponse<{
 }>;
 
 export const getOrderByNumberApi = (number: number) =>
-  fetch(`${URL}/orders/${number}`, {
+  fetchWithTimeout(`${URL}/orders/${number}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json'
@@ -145,7 +159,7 @@ type TAuthResponse = TServerResponse<{
 }>;
 
 export const registerUserApi = (data: TRegisterData) =>
-  fetch(`${URL}/auth/register`, {
+  fetchWithTimeout(`${URL}/auth/register`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json;charset=utf-8'
@@ -164,7 +178,7 @@ export type TLoginData = {
 };
 
 export const loginUserApi = (data: TLoginData) =>
-  fetch(`${URL}/auth/login`, {
+  fetchWithTimeout(`${URL}/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json;charset=utf-8'
@@ -178,7 +192,7 @@ export const loginUserApi = (data: TLoginData) =>
     });
 
 export const forgotPasswordApi = (data: { email: string }) =>
-  fetch(`${URL}/password-reset`, {
+  fetchWithTimeout(`${URL}/password-reset`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json;charset=utf-8'
@@ -192,7 +206,7 @@ export const forgotPasswordApi = (data: { email: string }) =>
     });
 
 export const resetPasswordApi = (data: { password: string; token: string }) =>
-  fetch(`${URL}/password-reset/reset`, {
+  fetchWithTimeout(`${URL}/password-reset/reset`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json;charset=utf-8'
@@ -225,7 +239,7 @@ export const updateUserApi = (user: Partial<TRegisterData>) =>
   });
 
 export const logoutApi = () =>
-  fetch(`${URL}/auth/logout`, {
+  fetchWithTimeout(`${URL}/auth/logout`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json;charset=utf-8'
