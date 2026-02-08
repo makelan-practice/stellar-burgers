@@ -7,6 +7,7 @@ import { selectIsAuthenticated } from '../../services/selectors/authSelectors';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   selectOrderModalData,
+  selectOrderError,
   selectOrderRequest
 } from '../../services/selectors/orderSelectors';
 import { clearOrderModal, createOrder } from '../../services/slices/orderSlice';
@@ -20,6 +21,7 @@ export const BurgerConstructor: FC = () => {
 
   const orderRequest = useSelector(selectOrderRequest);
   const orderModalData = useSelector(selectOrderModalData);
+  const orderError = useSelector(selectOrderError);
 
   const onOrderClick = () => {
     if (!constructorItems.bun || orderRequest) return;
@@ -45,6 +47,7 @@ export const BurgerConstructor: FC = () => {
     <BurgerConstructorUI
       price={price}
       orderRequest={orderRequest}
+      orderError={orderError}
       constructorItems={constructorItems}
       orderModalData={orderModalData}
       onOrderClick={onOrderClick}

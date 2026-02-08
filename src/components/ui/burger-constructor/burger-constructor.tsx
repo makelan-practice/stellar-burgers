@@ -13,6 +13,7 @@ import { Preloader, OrderDetailsUI } from '@ui';
 export const BurgerConstructorUI: FC<BurgerConstructorUIProps> = ({
   constructorItems,
   orderRequest,
+  orderError = null,
   price,
   orderModalData,
   onOrderClick,
@@ -99,6 +100,12 @@ export const BurgerConstructorUI: FC<BurgerConstructorUIProps> = ({
         title={orderRequest ? 'Оформляем заказ...' : ''}
       >
         <OrderDetailsUI orderNumber={orderModalData.number} />
+      </Modal>
+    )}
+
+    {orderError && !orderRequest && !orderModalData && (
+      <Modal onClose={closeOrderModal} title={'Ошибка оформления заказа'}>
+        <p className='text text_type_main-default'>{orderError}</p>
       </Modal>
     )}
   </section>

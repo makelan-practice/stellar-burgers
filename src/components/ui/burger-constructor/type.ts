@@ -8,6 +8,7 @@ export type TConstructorItems = {
 export type BurgerConstructorUIProps = {
   constructorItems: TConstructorItems;
   orderRequest: boolean;
+  orderError?: string | null;
   price: number;
   orderModalData: TOrder | null;
   onOrderClick: () => void;

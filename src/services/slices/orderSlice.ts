@@ -58,13 +58,17 @@ const orderSlice = createSlice({
       .addCase(createOrder.pending, (state) => {
         state.orderRequest = true;
         state.error = null;
+        // Чтобы при новом оформлении не показывались данные предыдущего успешного заказа
+        state.orderModalData = null;
       })
       .addCase(createOrder.fulfilled, (state, action) => {
         state.orderRequest = false;
         state.orderModalData = action.payload;
+        state.error = null;
       })
       .addCase(createOrder.rejected, (state, action) => {
         state.orderRequest = false;
+        state.orderModalData = null;
         state.error = action.error?.message || 'Ошибка оформления заказа';
       });
   }

@@ -1,22 +1,30 @@
 import { setCookie, getCookie } from './cookie';
-import { TIngredient, TOrder, TOrdersData, TUser } from './types';
+import { TIngredient, TOrder, TUser } from './types';
 
 const URL =
   process.env.BURGER_API_URL || 'https://norma.education-services.ru/api';
 
 const REQUEST_TIMEOUT_MS = 15000;
+const ORDER_REQUEST_TIMEOUT_MS = 60000;
 
-const fetchWithTimeout = (url: RequestInfo, options: RequestInit = {}) => {
+const fetchWithTimeout = (
+  url: RequestInfo,
+  options: RequestInit = {},
+  timeoutMs: number = REQUEST_TIMEOUT_MS
+) => {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   return fetch(url, { ...options, signal: controller.signal }).finally(() =>
     clearTimeout(timeoutId)
   );
 };
 
-const checkResponse = <T>(res: Response): Promise<T> =>
-  res.ok ? res.json() : res.json().then((err) => Promise.reject(err));
+const checkResponse = async <T>(res: Response): Promise<T> => {
+  const data = await res.json();
+  if (res.ok) return data as T;
+  throw data;
+};
 
 type TServerResponse<T> = {
   success: boolean;
@@ -40,7 +48,7 @@ export const refreshToken = (): Promise<TRefreshResponse> =>
     .then((res) => checkResponse<TRefreshResponse>(res))
     .then((refreshData) => {
       if (!refreshData.success) {
-        return Promise.reject(refreshData);
+        throw refreshData;
       }
       localStorage.setItem('refreshToken', refreshData.refreshToken);
       setCookie('accessToken', refreshData.accessToken);
@@ -49,10 +57,11 @@ export const refreshToken = (): Promise<TRefreshResponse> =>
 
 export const fetchWithRefresh = async <T>(
   url: RequestInfo,
-  options: RequestInit
+  options: RequestInit,
+  timeoutMs: number = REQUEST_TIMEOUT_MS
 ) => {
   try {
-    const res = await fetchWithTimeout(url, options);
+    const res = await fetchWithTimeout(url, options, timeoutMs);
     return await checkResponse<T>(res);
   } catch (err) {
     if ((err as { name?: string })?.name === 'AbortError') {
@@ -64,11 +73,10 @@ export const fetchWithRefresh = async <T>(
         (options.headers as { [key: string]: string }).authorization =
           refreshData.accessToken;
       }
-      const res = await fetchWithTimeout(url, options);
+      const res = await fetchWithTimeout(url, options, timeoutMs);
       return await checkResponse<T>(res);
-    } else {
-      return Promise.reject(err);
     }
+    throw err;
   }
 };
 
@@ -91,7 +99,7 @@ export const getIngredientsApi = () =>
     .then((res) => checkResponse<TIngredientsResponse>(res))
     .then((data) => {
       if (data?.success) return data.data;
-      return Promise.reject(data);
+      throw data;
     });
 
 export const getFeedsApi = () =>
@@ -99,7 +107,7 @@ export const getFeedsApi = () =>
     .then((res) => checkResponse<TFeedsResponse>(res))
     .then((data) => {
       if (data?.success) return data;
-      return Promise.reject(data);
+      throw data;
     });
 
 export const getOrdersApi = () =>
@@ -111,7 +119,7 @@ export const getOrdersApi = () =>
     } as HeadersInit
   }).then((data) => {
     if (data?.success) return data.orders;
-    return Promise.reject(data);
+    throw data;
   });
 
 type TNewOrderResponse = TServerResponse<{
@@ -120,18 +128,22 @@ type TNewOrderResponse = TServerResponse<{
 }>;
 
 export const orderBurgerApi = (data: string[]) =>
-  fetchWithRefresh<TNewOrderResponse>(`${URL}/orders`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json;charset=utf-8',
-      authorization: getCookie('accessToken')
-    } as HeadersInit,
-    body: JSON.stringify({
-      ingredients: data
-    })
-  }).then((data) => {
+  fetchWithRefresh<TNewOrderResponse>(
+    `${URL}/orders`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json;charset=utf-8',
+        authorization: getCookie('accessToken')
+      } as HeadersInit,
+      body: JSON.stringify({
+        ingredients: data
+      })
+    },
+    ORDER_REQUEST_TIMEOUT_MS
+  ).then((data) => {
     if (data?.success) return data;
-    return Promise.reject(data);
+    throw data;
   });
 
 type TOrderResponse = TServerResponse<{
@@ -169,7 +181,7 @@ export const registerUserApi = (data: TRegisterData) =>
     .then((res) => checkResponse<TAuthResponse>(res))
     .then((data) => {
       if (data?.success) return data;
-      return Promise.reject(data);
+      throw data;
     });
 
 export type TLoginData = {
@@ -188,7 +200,7 @@ export const loginUserApi = (data: TLoginData) =>
     .then((res) => checkResponse<TAuthResponse>(res))
     .then((data) => {
       if (data?.success) return data;
-      return Promise.reject(data);
+      throw data;
     });
 
 export const forgotPasswordApi = (data: { email: string }) =>
@@ -202,7 +214,7 @@ export const forgotPasswordApi = (data: { email: string }) =>
     .then((res) => checkResponse<TServerResponse<{}>>(res))
     .then((data) => {
       if (data?.success) return data;
-      return Promise.reject(data);
+      throw data;
     });
 
 export const resetPasswordApi = (data: { password: string; token: string }) =>
@@ -216,7 +228,7 @@ export const resetPasswordApi = (data: { password: string; token: string }) =>
     .then((res) => checkResponse<TServerResponse<{}>>(res))
     .then((data) => {
       if (data?.success) return data;
-      return Promise.reject(data);
+      throw data;
     });
 
 type TUserResponse = TServerResponse<{ user: TUser }>;
