@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "name": "Флюоресцентный метеоритный бургер",
+  "order": {
+    "_id": "64a7f3b2b4e4a0001b2c3d4e",
+    "status": "done",
+    "name": "Флюоресцентный метеоритный бургер",
+    "createdAt": "2024-01-15T12:00:00.000Z",
+    "updatedAt": "2024-01-15T12:00:00.000Z",
+    "number": 12345,
+    "ingredients": [
+      "60d3b41abdacab0026a733c7",
+      "60d3b41abdacab0026a733c8",
+      "60d3b41abdacab0026a733c7"
+    ]
+  }
+}
