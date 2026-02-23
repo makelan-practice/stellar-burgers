@@ -1,2 +1,4 @@
-// Cypress E2E support (commands, global config)
+// Cypress E2E support: custom commands и глобальная конфигурация
+import './commands';
+
 export {};
